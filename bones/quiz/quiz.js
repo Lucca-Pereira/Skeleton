@@ -31,8 +31,8 @@ export async function initQuiz(scene, camera, renderer, mesh) {
 
   try {
     const [areasRes, musclesRes] = await Promise.all([
-      fetch('/data/areas.json'),
-      fetch('/data/muscles.json'),
+      fetch(import.meta.env.BASE_URL + 'data/areas.json'),
+      fetch(import.meta.env.BASE_URL + 'data/muscles.json'),
     ]);
     console.log('[quiz] areas.json:', areasRes.ok, areasRes.status);
     console.log('[quiz] muscles.json:', musclesRes.ok, musclesRes.status);

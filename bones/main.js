@@ -23,7 +23,7 @@ dirLight.position.set(5, 10, 7.5);
 scene.add(dirLight);
 
 const loader = new GLTFLoader();
-loader.load('./arm.glb', (gltf) => {
+loader.load(import.meta.env.BASE_URL + 'arm.glb', (gltf) => {
   scene.add(gltf.scene);
 
   let boneMesh = null;
