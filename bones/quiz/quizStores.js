@@ -7,6 +7,7 @@ export const quizScore     = writable({ correct: 0, total: 0 });
 export const quizReady     = writable(false); // true when data loaded
 
 let muscleList  = [];
+let lastMuscle  = null;
 let highlightFn = null;
 let clearFn     = null;
 let progressFn  = null; // (muscleName, wasCorrect) => void
@@ -21,7 +22,10 @@ export function nextMuscle() {
   quizSelections.set([]);
   quizResult.set(null);
   if (!muscleList.length) return;
-  quizMuscle.set(muscleList[Math.floor(Math.random() * muscleList.length)]);
+  const pool = muscleList.length > 1 ? muscleList.filter(m => m !== lastMuscle) : muscleList;
+  const next = pool[Math.floor(Math.random() * pool.length)];
+  lastMuscle = next;
+  quizMuscle.set(next);
 }
 
 export function retryMuscle() {
