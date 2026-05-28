@@ -11,6 +11,7 @@
       await signIn();
     } catch (e) {
       error = 'Sign-in failed. Please try again.';
+    } finally {
       signingIn = false;
     }
   }
