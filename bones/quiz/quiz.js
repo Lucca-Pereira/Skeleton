@@ -88,6 +88,20 @@ export async function initQuiz(scene, camera, renderer, mesh) {
   }
 }
 
+export function reloadQuizData() {
+  if (!quizColorAttr) return; // quiz not yet initialised
+  const areas   = areasFromStorage();
+  const muscles = musclesFromStorage();
+  if (!areas || !muscles) return;
+
+  faceToZone  = {};
+  zoneToFaces = {};
+  buildLookup(areas);
+  setMuscleList(muscles);
+  clearHighlights();
+  nextMuscle();
+}
+
 function buildLookup(areas) {
   for (const [name, indices] of Object.entries(areas)) {
     zoneToFaces[name] = new Set(indices);

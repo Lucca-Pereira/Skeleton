@@ -5,6 +5,7 @@ import EditorPanel from './EditorPanel.svelte';
 import * as painter from './painter.js';
 import * as muscleData from './muscleData.js';
 import { editMode, activeZone } from './stores.js';
+import { reloadQuizData } from '../quiz/quiz.js';
 
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
@@ -24,7 +25,10 @@ export function initEditor(scene, camera, renderer, boneMesh, controls) {
 function attachEvents() {
   window.addEventListener('keydown', (e) => {
     if ((e.key === 'e' || e.key === 'E') && document.activeElement.tagName !== 'INPUT') {
-      editMode.update(v => !v);
+      editMode.update(v => {
+        if (v) reloadQuizData(); // closing editor — sync quiz with latest saved data
+        return !v;
+      });
     }
   });
 
