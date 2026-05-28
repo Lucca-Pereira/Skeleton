@@ -30,7 +30,7 @@
     border: 1px solid #2a2a2a;
     border-radius: 8px;
     padding: 6px 10px;
-    z-index: 200;
+    z-index: 50;
     font-family: monospace;
     font-size: 11px;
     color: #aaa;
