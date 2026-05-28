@@ -1,5 +1,7 @@
 # Skeleton
 
+**Live:** https://lucca-pereira.github.io/Skeleton/
+
 Anatomical 3D learning tool for a Final Degree Project (TFG). Students identify muscle origin and insertion points by clicking attachment zones on a 3D bone model.
 
 ## Structure
