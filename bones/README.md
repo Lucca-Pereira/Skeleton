@@ -1,68 +1,66 @@
 # Skeleton — bones
 
-Interactive 3D anatomy tool for learning muscle attachments. Built with Three.js + Svelte + Vite.
+Interactive 3D anatomy tool. Built with Three.js + Svelte 5 + Vite 8 + Firebase.
 
-## How to run
+## Running locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
-
 ## File structure
 
 ```
 bones/
-├── index.html           # Entry point
-├── main.js              # Three.js scene: camera, lights, model load, render loop
-├── arm.glb              # 3D bone model (humerus)
-├── vite.config.js       # Svelte plugin + /data/* serve + /save write endpoint
+├── index.html              # Entry point
+├── main.js                 # Scene setup, auth gating, initialises editor + quiz
+├── vite.config.js          # Svelte plugin + /save write endpoint (dev only)
 │
-├── editor/              # Paint editor
-│   ├── editor.js        # Three.js ↔ Svelte bridge (keyboard, pointer, raycasting)
-│   ├── EditorPanel.svelte  # Right sidebar UI
-│   ├── painter.js       # Overlay mesh, face painting, zone colours
-│   ├── muscleData.js    # Muscle CRUD + JSON export
-│   ├── stores.js        # Svelte stores: zones, muscles, editMode, activeZone
-│   └── fileSystem.js    # POST /save → writes JSON to data/ via Vite middleware
+├── lib/
+│   └── firebase.js         # Firebase app, auth, and Firestore instances
 │
-├── quiz/                # Quiz mode
-│   ├── quiz.js          # Loads data files, face lookup maps, click handler
-│   ├── QuizPanel.svelte # Bottom-left UI: muscle name, selections, result
-│   └── quizStores.js    # Quiz state: current muscle, selections, score
+├── auth/
+│   ├── auth.js             # Google sign-in, onAuthStateChanged, user doc creation
+│   ├── AuthPanel.svelte    # Full-screen login overlay (shown when signed out)
+│   └── UserPanel.svelte    # Top-right account chip with dropdown (editor toggle, sign out)
 │
-└── data/                # Persisted anatomy data (written by editor, read by quiz)
-    ├── areas.json        # { zoneName: [faceIndex, ...] }
-    └── muscles.json      # [{ name, origin, insertion, action, innervation }]
+├── editor/                 # Paint editor — teachers/admins only
+│   ├── editor.js           # Pointer events, raycasting, role gate for E key
+│   ├── EditorPanel.svelte  # Right sidebar: muscle form, zone list, save button
+│   ├── painter.js          # Indexed-geometry colour overlay, zone face data
+│   ├── muscleData.js       # Muscle CRUD, localStorage + JSON export
+│   ├── stores.js           # Svelte stores: zones, activeZone, editMode, muscles
+│   └── fileSystem.js       # POST /save → writes JSON to public/data/ (dev only)
+│
+├── quiz/                   # Quiz mode — all signed-in users
+│   ├── quiz.js             # Data loading, face lookup, click handler, Firestore progress
+│   ├── QuizPanel.svelte    # Bottom-left UI: muscle prompt, selections, result, skip
+│   └── stores.js           # Quiz state: current muscle, selections, score, callbacks
+│
+└── public/
+    ├── arm.glb             # 3D bone model
+    └── data/
+        ├── areas.json      # { zoneName: [faceIndex, ...] }
+        └── muscles.json    # [{ name, origin, insertion, action, innervation }]
 ```
 
-## Workflow
+## Data flow
 
-### 1. Define muscles (editor)
+- **Editor → localStorage** on Save (all environments)
+- **Editor → `public/data/*.json`** on Save (dev only, via `/save` Vite middleware)
+- **Quiz** reads localStorage first, falls back to `public/data/*.json`
+- Closing the editor (E or dropdown) reloads quiz data from localStorage automatically
+- **Firestore** stores per-user quiz progress: `users/{uid}/progress/{muscleName}`
 
-Press **E** to toggle edit mode. In the right sidebar:
+## Making permanent data changes
 
-1. Enter muscle name + origin zone name + insertion zone name → **Add Muscle**  
-   Zones are created automatically if they don't exist yet.
-2. Select a zone from the list.
-3. Click/drag on the bone to paint its faces.
-4. Repeat for all zones.
-5. **Save** — writes `data/areas.json` and `data/muscles.json` to disk.
+1. Edit locally with `npm run dev`
+2. Press **Save** in the editor
+3. `git add public/data/ && git commit && git push`
 
-### 2. Quiz mode
-
-Quiz activates automatically once both data files exist and have content. Click two zones on the bone to identify the muscle's origin and insertion.
+GitHub Actions deploys the updated JSON to GitHub Pages.
 
 ## Important
 
-**Finalise `arm.glb` before painting.** Zone data is stored as triangle face indices of the mesh. If the model changes after painting, all zones need to be repainted.
-
-## Build for deployment
-
-```bash
-npm run build   # outputs to dist/
-```
-
-Deploy `dist/` to any static host. The quiz works fully on a static host. The `/save` write endpoint only works in dev mode — commit `data/` after editing.
+**Finalise `arm.glb` before painting.** Zone data is stored as triangle face indices. If the model geometry changes after painting, all zones must be repainted.
