@@ -11,10 +11,12 @@ const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let isPainting = false;
 let _renderer, _camera;
+let _editorAllowed = false;
 
 export function initEditor(scene, camera, renderer, boneMesh, controls, role) {
   _camera = camera;
   _renderer = renderer;
+  _editorAllowed = role === 'admin' || role === 'teacher';
 
   painter.init(boneMesh);
   mount(EditorPanel, { target: document.body });
@@ -23,10 +25,9 @@ export function initEditor(scene, camera, renderer, boneMesh, controls, role) {
 }
 
 function attachEvents() {
-  const editorAllowed = role === 'admin' || role === 'teacher';
 
   window.addEventListener('keydown', (e) => {
-    if (!editorAllowed) return;
+    if (!_editorAllowed) return;
     if ((e.key === 'e' || e.key === 'E') && document.activeElement.tagName !== 'INPUT') {
       editMode.update(v => {
         if (v) reloadQuizData();

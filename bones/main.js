@@ -33,9 +33,10 @@ const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
 fillLight.position.set(-5, -5, -7.5);
 scene.add(fillLight);
 
-let boneMesh = null;
-let appReady  = false;
-let authDone  = false;
+let boneMesh     = null;
+let appReady     = false;
+let authDone     = false;
+let initialized  = false;
 
 const loader = new GLTFLoader();
 loader.load(import.meta.env.BASE_URL + 'arm.glb', (gltf) => {
@@ -74,7 +75,8 @@ currentUser.subscribe((user) => {
 });
 
 function tryInit() {
-  if (!appReady || !authDone) return;
+  if (!appReady || !authDone || initialized) return;
+  initialized = true;
   const role = get(userRole);
   initEditor(scene, camera, renderer, boneMesh, controls, role);
   initQuiz(scene, camera, renderer, boneMesh);
