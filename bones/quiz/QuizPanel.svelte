@@ -1,6 +1,6 @@
 <script>
   import { editMode } from '../editor/stores.js';
-  import { quizMuscle, quizSelections, quizResult, quizScore, quizReady, nextMuscle, retryMuscle } from './quizStores.js';
+  import { quizMuscle, quizSelections, quizResult, quizScore, quizReady, nextMuscle, retryMuscle } from './stores.js';
 </script>
 
 {#if $quizReady && !$editMode}

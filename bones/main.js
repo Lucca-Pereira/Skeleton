@@ -5,7 +5,7 @@ import { mount } from 'svelte';
 import { get } from 'svelte/store';
 import { initEditor } from './editor/editor.js';
 import { initQuiz } from './quiz/quiz.js';
-import { authReady, currentUser, userRole, canEdit } from './auth/auth.js';
+import { authReady, currentUser, userRole } from './auth/auth.js';
 import AuthPanel from './auth/AuthPanel.svelte';
 import UserPanel from './auth/UserPanel.svelte';
 
@@ -33,10 +33,9 @@ const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
 fillLight.position.set(-5, -5, -7.5);
 scene.add(fillLight);
 
-let boneMesh     = null;
-let appReady     = false;
-let authDone     = false;
-let initialized  = false;
+let boneMesh    = null;
+let appReady    = false;
+let initialized = false;
 
 const loader = new GLTFLoader();
 loader.load(import.meta.env.BASE_URL + 'arm.glb', (gltf) => {
@@ -59,26 +58,15 @@ loader.load(import.meta.env.BASE_URL + 'arm.glb', (gltf) => {
   tryInit();
 }, undefined, (err) => console.error('Error loading model:', err));
 
-// Wait for the user to be signed in, then start the app
-authReady.subscribe((ready) => {
-  if (!ready) return;
-  const user = get(currentUser);
-  if (!user) return; // still on login screen
-  authDone = true;
-  tryInit();
-});
-
-currentUser.subscribe((user) => {
-  if (!user || !get(authReady)) return;
-  authDone = true;
-  tryInit();
-});
+// tryInit is called whenever auth state or model load state changes.
+// It only proceeds once both the model is loaded and the user is signed in.
+authReady.subscribe(tryInit);
+currentUser.subscribe(tryInit);
 
 function tryInit() {
-  if (!appReady || !authDone || initialized) return;
+  if (!appReady || !get(authReady) || !get(currentUser) || initialized) return;
   initialized = true;
-  const role = get(userRole);
-  initEditor(scene, camera, renderer, boneMesh, controls, role);
+  initEditor(scene, camera, renderer, boneMesh, controls, get(userRole));
   initQuiz(scene, camera, renderer, boneMesh);
 }
 

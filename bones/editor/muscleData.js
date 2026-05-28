@@ -11,7 +11,7 @@ export function deleteMuscle(index) {
 }
 
 export function saveMuscles() {
-  localStorage.setItem('squeleton-muscles', JSON.stringify(get(muscles)));
+  localStorage.setItem('skeleton-muscles', JSON.stringify(get(muscles)));
   console.log('[muscles] saved', get(muscles).length, 'muscles');
 }
 
@@ -20,7 +20,7 @@ export function loadMuscles(data) {
 }
 
 export function loadFromStorage() {
-  const raw = localStorage.getItem('squeleton-muscles');
+  const raw = localStorage.getItem('skeleton-muscles');
   if (!raw) return false;
   try {
     const data = JSON.parse(raw);

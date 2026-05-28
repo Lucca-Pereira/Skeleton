@@ -124,12 +124,12 @@ export function saveToStorage() {
   for (const [name, z] of Object.entries(get(zones))) {
     out[name] = { indices: [...(faceData[name] ?? [])], colorIdx: z.colorIdx };
   }
-  localStorage.setItem('squeleton-zones', JSON.stringify(out));
+  localStorage.setItem('skeleton-zones', JSON.stringify(out));
   console.log('[painter] saved', Object.keys(out).length, 'zones');
 }
 
 export function loadFromStorage() {
-  const raw = localStorage.getItem('squeleton-zones');
+  const raw = localStorage.getItem('skeleton-zones');
   if (!raw) return false;
   try {
     const data = JSON.parse(raw);

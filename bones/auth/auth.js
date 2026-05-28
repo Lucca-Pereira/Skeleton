@@ -4,7 +4,7 @@ import {
   signOut as firebaseSignOut, onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase.js';
+import { auth, db } from '../lib/firebase.js';
 
 export const currentUser = writable(null);
 export const userRole    = writable(null); // 'admin' | 'teacher' | 'student' | null
@@ -18,10 +18,6 @@ export async function signIn() {
 
 export async function signOut() {
   await firebaseSignOut(auth);
-}
-
-export function canEdit(role) {
-  return role === 'admin' || role === 'teacher';
 }
 
 onAuthStateChanged(auth, async (user) => {

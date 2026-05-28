@@ -1,16 +1,18 @@
 import * as THREE from 'three';
 import { get } from 'svelte/store';
-
 import { mount } from 'svelte';
 import { editMode } from '../editor/stores.js';
 import {
   setMuscleList, setHighlightCallback, setClearCallback, setProgressCallback,
   handleZoneClick, nextMuscle, quizReady,
-} from './quizStores.js';
+} from './stores.js';
 import { doc, setDoc, increment, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebase.js';
+import { db } from '../lib/firebase.js';
 import { currentUser } from '../auth/auth.js';
 import QuizPanel from './QuizPanel.svelte';
+
+const STORAGE_ZONES   = 'skeleton-zones';
+const STORAGE_MUSCLES = 'skeleton-muscles';
 
 const COLORS = {
   first:   [0.0, 0.5, 1.0],
@@ -19,19 +21,20 @@ const COLORS = {
   wrong:   [1.0, 0.1, 0.1],
 };
 
-let faceToZone  = {};
-let zoneToFaces = {};
+let faceToZone    = {};
+let zoneToFaces   = {};
 let quizColorAttr = null;
 let quizIndexAttr = null;
-let boneMesh = null;
-let _camera, _renderer;
+let boneMesh      = null;
+let camera        = null;
+let renderer      = null;
 
 const raycaster = new THREE.Raycaster();
 const mouse     = new THREE.Vector2();
 
 function areasFromStorage() {
   try {
-    const raw = localStorage.getItem('squeleton-zones');
+    const raw = localStorage.getItem(STORAGE_ZONES);
     if (!raw) return null;
     const data = JSON.parse(raw);
     if (!Object.keys(data).length) return null;
@@ -45,17 +48,17 @@ function areasFromStorage() {
 
 function musclesFromStorage() {
   try {
-    const raw = localStorage.getItem('squeleton-muscles');
+    const raw = localStorage.getItem(STORAGE_MUSCLES);
     if (!raw) return null;
     const data = JSON.parse(raw);
     return data.length ? data : null;
   } catch { return null; }
 }
 
-export async function initQuiz(scene, camera, renderer, mesh) {
-  _camera   = camera;
-  _renderer = renderer;
-  boneMesh  = mesh;
+export async function initQuiz(scene, _camera, _renderer, mesh) {
+  camera   = _camera;
+  renderer = _renderer;
+  boneMesh = mesh;
 
   try {
     let areas   = areasFromStorage();
@@ -67,14 +70,12 @@ export async function initQuiz(scene, camera, renderer, mesh) {
         fetch(import.meta.env.BASE_URL + 'data/muscles.json'),
       ]);
       if (!areasRes.ok || !musclesRes.ok) {
-        console.warn('[quiz] one or both files missing — quiz inactive');
+        console.warn('[quiz] data files missing — quiz inactive');
         return;
       }
       if (!areas)   areas   = await areasRes.json();
       if (!muscles) muscles = await musclesRes.json();
     }
-    console.log('[quiz] zones loaded:', Object.keys(areas).length);
-    console.log('[quiz] muscles loaded:', muscles.length);
 
     buildLookup(areas);
     buildOverlay();
@@ -84,28 +85,16 @@ export async function initQuiz(scene, camera, renderer, mesh) {
     setProgressCallback(recordProgress);
 
     mount(QuizPanel, { target: document.body });
-    attachEvents();
+    attachClickHandler();
     nextMuscle();
     quizReady.set(true);
-    console.log('[quiz] ready');
   } catch (e) {
     console.error('[quiz] failed to start:', e);
   }
 }
 
-async function recordProgress(muscleName, wasCorrect) {
-  const user = get(currentUser);
-  if (!user) return;
-  const ref = doc(db, 'users', user.uid, 'progress', muscleName);
-  await setDoc(ref, {
-    attempts: increment(1),
-    correct:  increment(wasCorrect ? 1 : 0),
-    lastSeen: serverTimestamp(),
-  }, { merge: true });
-}
-
 export function reloadQuizData() {
-  if (!quizColorAttr) return; // quiz not yet initialised
+  if (!quizColorAttr) return;
   const areas   = areasFromStorage();
   const muscles = musclesFromStorage();
   if (!areas || !muscles) return;
@@ -132,23 +121,23 @@ function buildOverlay() {
   quizColorAttr = geom.attributes.color;
   quizIndexAttr = geom.index;
 
-  const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
+  const overlay = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
     vertexColors: true,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     transparent: true,
   }));
-  mesh.renderOrder = 2;
-  boneMesh.add(mesh);
+  overlay.renderOrder = 2;
+  boneMesh.add(overlay);
 }
 
-function attachEvents() {
-  _renderer.domElement.addEventListener('click', (e) => {
+function attachClickHandler() {
+  renderer.domElement.addEventListener('click', (e) => {
     if (get(editMode)) return;
-    const rect = _renderer.domElement.getBoundingClientRect();
+    const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width)  *  2 - 1;
     mouse.y = ((e.clientY - rect.top)  / rect.height) * -2 + 1;
-    raycaster.setFromCamera(mouse, _camera);
+    raycaster.setFromCamera(mouse, camera);
     const hits = raycaster.intersectObject(boneMesh, false);
     if (!hits.length) return;
     const zone = faceToZone[hits[0].faceIndex];
@@ -162,8 +151,7 @@ function highlightZone(name, colorKey) {
   const [r, g, b] = COLORS[colorKey];
   for (const fi of faces) {
     for (let v = 0; v < 3; v++) {
-      const vi = quizIndexAttr.getX(fi * 3 + v);
-      quizColorAttr.setXYZ(vi, r, g, b);
+      quizColorAttr.setXYZ(quizIndexAttr.getX(fi * 3 + v), r, g, b);
     }
   }
   quizColorAttr.needsUpdate = true;
@@ -172,4 +160,15 @@ function highlightZone(name, colorKey) {
 function clearHighlights() {
   quizColorAttr.array.fill(0);
   quizColorAttr.needsUpdate = true;
+}
+
+async function recordProgress(muscleName, wasCorrect) {
+  const user = get(currentUser);
+  if (!user) return;
+  const ref = doc(db, 'users', user.uid, 'progress', muscleName);
+  await setDoc(ref, {
+    attempts: increment(1),
+    correct:  increment(wasCorrect ? 1 : 0),
+    lastSeen: serverTimestamp(),
+  }, { merge: true });
 }
