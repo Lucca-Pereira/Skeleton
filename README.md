@@ -1,4 +1,4 @@
-# Squeleton
+# Skeleton
 
 Anatomical 3D learning tool for a Final Degree Project (TFG). Students identify muscle origin and insertion points by clicking attachment zones on a 3D bone model.
 
@@ -59,7 +59,7 @@ Quiz activates automatically once both `data/areas.json` and `data/muscles.json`
 
 - [Three.js](https://threejs.org/) — 3D scene, raycasting, overlay mesh
 - [Svelte 5](https://svelte.dev/) — reactive editor and quiz UI
-- [Vite 7](https://vitejs.dev/) — dev server + build tool
+- [Vite 8](https://vitejs.dev/) — dev server + build tool
 - GLB/GLTF — bone model format (created in Blender)
 
 ## Build

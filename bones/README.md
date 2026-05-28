@@ -1,4 +1,4 @@
-# Squeleton — bones
+# Skeleton — bones
 
 Interactive 3D anatomy tool for learning muscle attachments. Built with Three.js + Svelte + Vite.
 

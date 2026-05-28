@@ -18,11 +18,35 @@ const COLORS = {
 let faceToZone  = {};
 let zoneToFaces = {};
 let quizColorAttr = null;
+let quizIndexAttr = null;
 let boneMesh = null;
 let _camera, _renderer;
 
 const raycaster = new THREE.Raycaster();
 const mouse     = new THREE.Vector2();
+
+function areasFromStorage() {
+  try {
+    const raw = localStorage.getItem('squeleton-zones');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!Object.keys(data).length) return null;
+    const out = {};
+    for (const [name, val] of Object.entries(data)) {
+      out[name] = Array.isArray(val) ? val : val.indices;
+    }
+    return out;
+  } catch { return null; }
+}
+
+function musclesFromStorage() {
+  try {
+    const raw = localStorage.getItem('squeleton-muscles');
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    return data.length ? data : null;
+  } catch { return null; }
+}
 
 export async function initQuiz(scene, camera, renderer, mesh) {
   _camera   = camera;
@@ -30,19 +54,21 @@ export async function initQuiz(scene, camera, renderer, mesh) {
   boneMesh  = mesh;
 
   try {
-    const [areasRes, musclesRes] = await Promise.all([
-      fetch(import.meta.env.BASE_URL + 'data/areas.json'),
-      fetch(import.meta.env.BASE_URL + 'data/muscles.json'),
-    ]);
-    console.log('[quiz] areas.json:', areasRes.ok, areasRes.status);
-    console.log('[quiz] muscles.json:', musclesRes.ok, musclesRes.status);
-    if (!areasRes.ok || !musclesRes.ok) {
-      console.warn('[quiz] one or both files missing — quiz inactive');
-      return;
-    }
+    let areas   = areasFromStorage();
+    let muscles = musclesFromStorage();
 
-    const areas   = await areasRes.json();
-    const muscles = await musclesRes.json();
+    if (!areas || !muscles) {
+      const [areasRes, musclesRes] = await Promise.all([
+        fetch(import.meta.env.BASE_URL + 'data/areas.json'),
+        fetch(import.meta.env.BASE_URL + 'data/muscles.json'),
+      ]);
+      if (!areasRes.ok || !musclesRes.ok) {
+        console.warn('[quiz] one or both files missing — quiz inactive');
+        return;
+      }
+      if (!areas)   areas   = await areasRes.json();
+      if (!muscles) muscles = await musclesRes.json();
+    }
     console.log('[quiz] zones loaded:', Object.keys(areas).length);
     console.log('[quiz] muscles loaded:', muscles.length);
 
@@ -70,10 +96,11 @@ function buildLookup(areas) {
 }
 
 function buildOverlay() {
-  const geom   = boneMesh.geometry.toNonIndexed();
+  const geom   = boneMesh.geometry.clone();
   const colors = new Float32Array(geom.attributes.position.count * 3);
   geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   quizColorAttr = geom.attributes.color;
+  quizIndexAttr = geom.index;
 
   const mesh = new THREE.Mesh(geom, new THREE.MeshBasicMaterial({
     vertexColors: true,
@@ -104,13 +131,15 @@ function highlightZone(name, colorKey) {
   if (!faces) return;
   const [r, g, b] = COLORS[colorKey];
   for (const fi of faces) {
-    const base = fi * 3;
-    for (let v = 0; v < 3; v++) quizColorAttr.setXYZ(base + v, r, g, b);
+    for (let v = 0; v < 3; v++) {
+      const vi = quizIndexAttr.getX(fi * 3 + v);
+      quizColorAttr.setXYZ(vi, r, g, b);
+    }
   }
   quizColorAttr.needsUpdate = true;
 }
 
 function clearHighlights() {
-  for (let i = 0; i < quizColorAttr.count; i++) quizColorAttr.setXYZ(i, 0, 0, 0);
+  quizColorAttr.array.fill(0);
   quizColorAttr.needsUpdate = true;
 }

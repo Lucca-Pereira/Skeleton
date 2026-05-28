@@ -59,14 +59,14 @@ function updateMouse(e) {
 async function tryLoad() {
   if (!painter.loadFromStorage()) {
     try {
-      const res = await fetch('./areas.json');
+      const res = await fetch(import.meta.env.BASE_URL + 'data/areas.json');
       if (res.ok) painter.loadZones(await res.json());
     } catch (_) {}
   }
 
   if (!muscleData.loadFromStorage()) {
     try {
-      const res = await fetch('./muscles.json');
+      const res = await fetch(import.meta.env.BASE_URL + 'data/muscles.json');
       if (res.ok) muscleData.loadMuscles(await res.json());
     } catch (_) {}
   }
