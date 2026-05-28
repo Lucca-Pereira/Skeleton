@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "firebase": "^12.13.0",
     "three": "^0.182.0"
   },
   "devDependencies": {

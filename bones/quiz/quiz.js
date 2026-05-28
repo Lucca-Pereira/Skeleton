@@ -1,11 +1,15 @@
 import * as THREE from 'three';
 import { get } from 'svelte/store';
+
 import { mount } from 'svelte';
 import { editMode } from '../editor/stores.js';
 import {
-  setMuscleList, setHighlightCallback, setClearCallback,
+  setMuscleList, setHighlightCallback, setClearCallback, setProgressCallback,
   handleZoneClick, nextMuscle, quizReady,
 } from './quizStores.js';
+import { doc, setDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase.js';
+import { currentUser } from '../auth/auth.js';
 import QuizPanel from './QuizPanel.svelte';
 
 const COLORS = {
@@ -77,6 +81,7 @@ export async function initQuiz(scene, camera, renderer, mesh) {
     setMuscleList(muscles);
     setHighlightCallback(highlightZone);
     setClearCallback(clearHighlights);
+    setProgressCallback(recordProgress);
 
     mount(QuizPanel, { target: document.body });
     attachEvents();
@@ -86,6 +91,17 @@ export async function initQuiz(scene, camera, renderer, mesh) {
   } catch (e) {
     console.error('[quiz] failed to start:', e);
   }
+}
+
+async function recordProgress(muscleName, wasCorrect) {
+  const user = get(currentUser);
+  if (!user) return;
+  const ref = doc(db, 'users', user.uid, 'progress', muscleName);
+  await setDoc(ref, {
+    attempts: increment(1),
+    correct:  increment(wasCorrect ? 1 : 0),
+    lastSeen: serverTimestamp(),
+  }, { merge: true });
 }
 
 export function reloadQuizData() {

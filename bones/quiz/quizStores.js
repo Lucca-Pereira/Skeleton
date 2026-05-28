@@ -6,13 +6,15 @@ export const quizResult    = writable(null); // null | 'correct' | 'incorrect'
 export const quizScore     = writable({ correct: 0, total: 0 });
 export const quizReady     = writable(false); // true when data loaded
 
-let muscleList = [];
+let muscleList  = [];
 let highlightFn = null;
-let clearFn    = null;
+let clearFn     = null;
+let progressFn  = null; // (muscleName, wasCorrect) => void
 
-export function setMuscleList(list)      { muscleList = list; }
-export function setHighlightCallback(fn) { highlightFn = fn; }
-export function setClearCallback(fn)     { clearFn = fn; }
+export function setMuscleList(list)        { muscleList = list; }
+export function setHighlightCallback(fn)   { highlightFn = fn; }
+export function setClearCallback(fn)       { clearFn = fn; }
+export function setProgressCallback(fn)    { progressFn = fn; }
 
 export function nextMuscle() {
   if (clearFn) clearFn();
@@ -54,5 +56,6 @@ function checkAnswer(sel) {
   if (correct) quizScore.update(s => ({ correct: s.correct + 1, total: s.total + 1 }));
   else         quizScore.update(s => ({ ...s, total: s.total + 1 }));
 
+  if (progressFn) progressFn(muscle.name, correct);
   quizResult.set(correct ? 'correct' : 'incorrect');
 }

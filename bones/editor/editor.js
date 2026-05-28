@@ -12,7 +12,7 @@ const mouse = new THREE.Vector2();
 let isPainting = false;
 let _renderer, _camera;
 
-export function initEditor(scene, camera, renderer, boneMesh, controls) {
+export function initEditor(scene, camera, renderer, boneMesh, controls, role) {
   _camera = camera;
   _renderer = renderer;
 
@@ -23,10 +23,13 @@ export function initEditor(scene, camera, renderer, boneMesh, controls) {
 }
 
 function attachEvents() {
+  const editorAllowed = role === 'admin' || role === 'teacher';
+
   window.addEventListener('keydown', (e) => {
+    if (!editorAllowed) return;
     if ((e.key === 'e' || e.key === 'E') && document.activeElement.tagName !== 'INPUT') {
       editMode.update(v => {
-        if (v) reloadQuizData(); // closing editor — sync quiz with latest saved data
+        if (v) reloadQuizData();
         return !v;
       });
     }
