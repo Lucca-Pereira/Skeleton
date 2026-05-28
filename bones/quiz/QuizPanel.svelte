@@ -26,6 +26,7 @@
           </span>
         </div>
       </div>
+      <button class="btn skip" onclick={nextMuscle}>Skip →</button>
 
     {:else}
       <div class="result" class:correct={$quizResult === 'correct'} class:wrong={$quizResult === 'incorrect'}>
@@ -157,4 +158,6 @@
   .primary:hover   { background: #355a35; }
   .secondary { background: #2a2a2a; color: #888; }
   .secondary:hover { background: #333; color: #aaa; }
+  .skip { background: none; color: #444; border: 1px solid #2a2a2a; font-size: 11px; padding: 5px 10px; flex: none; align-self: flex-end; }
+  .skip:hover { color: #888; border-color: #444; }
 </style>
